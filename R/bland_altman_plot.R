@@ -1,32 +1,3 @@
-#' Bland and Atlman's limits of agreement plot
-#'
-#' This function produces Bland and Altman's Limits of Agreement plot
-#' (LoA) when there are repeated measurements with possibly heteroscedastic
-#' measurement errors.
-#'
-#'
-#' @param data a dataframe contains the object identification number (id),
-#' the measurement values from new measurement method (y1) and those from
-#' the reference standard (y2)
-#' @param new specify the variable name or location for the new measurement method
-#' @param Ref specify the variable name or location for the reference  measuerment method
-#' @param ID specify the variable name for location for the subject identification number (id)
-#' @param fill logical. if \code{TRUE} use the avarage value for new methods to
-#' fill out the missing value (only useful for drawing a plot with all the
-#' measurements by the reference standard)
-#'
-#' @author  Mingkai Peng
-#' @details  This functions computes the limits of agreement (LoA) when there are
-#' repeated measurements and possibly the measurement error are heteroscedastic
-#' @export
-#' @importFrom stats lm
-#' @examples
-#' ### Load the data
-#' data(data1)
-#' ### Bland and Altman's plot
-#' bland_altman_plot(data1)
-
-
 
 bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         data_sub <-data[,c(ID,new,Ref)]
@@ -42,7 +13,7 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         coef_2<- 1/mean(1/y2)
         coef_2 <- 1- 1/coef_2
         #### With-object variance
-        model_y2 <- lme(y2~1,data=data_sub,random = ~1|id)
+        model_y2 <- lme(y2~1,data=data_sub,random = ~1|id, na.action = na.exclude)
         VIF<- model_y2$sigma^2*coef_2
         if (max(y1) > 1){
                 model_y1 <- lme(y1~1,data=data_sub,random = ~1|id,na.action = na.exclude)
@@ -72,13 +43,13 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         ### model for plot
         Model_3 <- lm(upper~AVG_M,data=data_sub_1)
         Model_4 <- lm(lower~AVG_M,data=data_sub_1)
-        max <- max(abs(data_sub$Diff_M),na.rm = T)
+        max <- max(abs(data_sub$Diff_M),na.rm=TRUE)
         max <- max + max*0.2
         ##### final plot
         par(mar=c(3.5,3.5,2,2)+0.1)
         plot(data_sub$AVG_M,data_sub$Diff_M,xlab = "",ylab = "",axes = F,
              col="grey",ylim=c(-max,max))
-        title(main="Bland and Altman' limit of agreement (LoA)",cex.main=0.9)
+        title(main="Extended Bland-Altman limits of agreement (LoA) plot",cex.main=0.9)
         xlab="Average:(y1+y2)/2"
         ### Add the y axis
         axis(2,col="black",las=1)
@@ -88,7 +59,6 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         axis(1)
         mtext("Average:(y1+y2)/2",side=1,col="black",line=2)
 
-
         abline(Model_1$coefficients,col="blue",lwd=2)
         abline(h=0,col="black",lwd=2)
         abline(Model_3$coefficients,col="blue",lty=2,lwd=2)
@@ -96,5 +66,3 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         legend("topleft",legend=c("Regression line","95% LoA"),col = c("blue","blue"),
                y.intersp = 0.7,yjust=0.2,lty=c(2,2),bty = "n",cex=0.8)
 }
-
-

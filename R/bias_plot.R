@@ -1,24 +1,3 @@
-#' Plot used to visually assess the amount of bias of a new measurement method
-#'  relative to a reference standard
-#'
-#' This function draws the "bias plot" which is used to visually assess the bias
-#'  of the new method relative to a reference method. It is obtained by graphing a scatter plot
-#'  of  \eqn{y_{1ij}} (new method) and \eqn{y_{2ij}} (reference method) versus the BLUP of y2 along with the two regression lines, and
-#'  adds a second scale on the right showing the relationship between the
-#'  estimated amount of bias and BLUP of y2.
-#'
-#' @param object an object retunred by a call to \link{measure_compare}
-#' @author  Mingkai Peng
-#' @importFrom graphics abline axis box legend mtext par plot points title
-#' @export
-#' @examples
-#' ### load the data
-#' data(data1)
-#' ### analysis
-#' measure_model <- measure_compare(data1)
-#' ### Bias plot
-#' bias_plot(measure_model)
-#'
 
 bias_plot <- function(object){
         ### extract the objects from the output
@@ -28,8 +7,8 @@ bias_plot <- function(object){
         Models <- object$Models
         subtitle <- paste("Differential bias:",round(Bias[1,1],3),"; ",
                           "Proportional bias:",round(Bias[2,1],3),sep="")
-        min_y <- min(min(data_old$y2),min(data_new$y1))
-        max_y <- max(max(data_old$y2),max(data_new$y1))
+        min_y <- min(min(data_old$y2,na.rm=TRUE),min(data_new$y1,na.rm=TRUE))
+        max_y <- max(max(data_old$y2,na.rm=TRUE),max(data_new$y1,na.rm=TRUE))
         min_y <- floor(min_y)
         range = max_y-min_y
         max_y <- ceiling(max_y+range*0.2)
@@ -71,4 +50,3 @@ bias_plot <- function(object){
                      pch = c(1,19),col = c("black","blue","red"),pt.cex=c(1,1,0.0001),
                      y.intersp = 0.7,yjust=0.2,lty=c(1,2,1),bty = "n",cex=0.8)}
 }
-
