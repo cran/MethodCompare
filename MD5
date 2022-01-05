@@ -1,11 +1,11 @@
-ad6794f29846b78584400a1475c0669a *DESCRIPTION
+804d6d405150fce92cb0c707e6130f9a *DESCRIPTION
 16c85ef6f896b52be89cd8a2aeaa90dd *NAMESPACE
-b3d63623fa638b6b0c6a8ce3ab12e7ac *R/bias_plot.R
-7f03ea8d88cd385eae087ffe3489ee38 *R/bland_altman_plot.R
-ae2372ed8458159eba09b22d1442e24e *R/compare_plot.R
+8efebfce7be0266ae931088be7b3af24 *R/Compare_plot.R
+5a211e74c0d82ca6b7dfc3db14e88870 *R/bias_plot.R
+231b40bc5b41da998d84a6987842beeb *R/bland_altman_plot.R
 ca087adbad2502dad7b7cc28de3580da *R/data1.R
-11e99706df2715851b73342319ffaa08 *R/measure_compare.R
-8ae5eae8c781d99168d398dbbc1ca2d4 *R/precision_plot.R
+78a35acd48cc24200e9482aa2a47511c *R/measure_compare.R
+9627e184c425ab827c177323ff9cfeea *R/precision_plot.R
 f004c1cafd92bc99bac8e72f4dbf4ef0 *data/data1.rda
 254e1f174b1393bec0dc62ca6df1ec80 *data/data2.rda
 fc2c4603e996d37493c669df0369a79f *data/data3.rda

@@ -1,6 +1,33 @@
+#' Bland and Atlman's limits of agreement plot
+#'
+#' This function produces Bland and Altman's Limits of Agreement plot
+#' (LoA) when there are repeated measurements with possibly heteroscedastic
+#' measurement errors.
+#'
+#'
+#' @param data a dataframe contains the object identification number (id),
+#' the measurement values from new measurement method (y1) and those from
+#' the reference standard (y2)
+#' @param new specify the variable name or location for the new measurement method
+#' @param Ref specify the variable name or location for the reference  measuerment method
+#' @param ID specify the variable name for location for the subject identification number (id)
+#' @param fill logical. if \code{TRUE} use the avarage value for new methods to
+#' fill out the missing value (only useful for drawing a plot with all the
+#' measurements by the reference standard)
+#'
+#' @author  Mingkai Peng
+#' @details  This functions computes the limits of agreement (LoA) when there are
+#' repeated measurements and possibly the measurement error are heteroscedastic
+#' @export
+#' @importFrom stats lm
+#' @examples
+#' ### Load the data
+#' data(data1)
+#' ### Bland and Altman's plot
+#' bland_altman_plot(data1)
 
 bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
-        data_sub <-data[,c(ID,new,Ref)]
+        data_sub <- (data[,c(ID,new,Ref)])
         colnames(data_sub) <- c("id","y1","y2")
         #### calculate the difference and average
         data_sub$Diff_M <- data_sub$y1-data_sub$y2
@@ -33,12 +60,12 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         data_sub_1$lower <- data_sub_1$fitted-1.96*sqrt(data_sub_1$sig2_abs_res+VIF)
         ####
         if (fill) {
-                mean_y1 <- aggregate(y1~id,data=data_sub,mean)
-                colnames(mean_y1)[2] <- "y1.mean"
-                data_sub <-merge(data_sub,mean_y1,by="id")
-                data_sub$y1 <- ifelse(is.na(data_sub$y1),data_sub$y1.mean,data_sub$y1)
-                data_sub$Diff_M <- data_sub$y1-data_sub$y2
-                data_sub$AVG_M <- (data_sub$y1+data_sub$y2)/2
+                 mean_y1 <- aggregate(y1~id,data=data_sub,mean)
+                 colnames(mean_y1)[2] <- "y1.mean"
+                 data_sub <-merge(data_sub,mean_y1,by="id")
+                 data_sub$y1 <- ifelse(is.na(data_sub$y1),data_sub$y1.mean,data_sub$y1)
+                 data_sub$Diff_M <- data_sub$y1-data_sub$y2
+                 data_sub$AVG_M <- (data_sub$y1+data_sub$y2)/2
         }
         ### model for plot
         Model_3 <- lm(upper~AVG_M,data=data_sub_1)
@@ -58,7 +85,6 @@ bland_altman_plot <- function(data,new="y1",Ref="y2",ID="id",fill=TRUE){
         ### Add the x axis
         axis(1)
         mtext("Average:(y1+y2)/2",side=1,col="black",line=2)
-
         abline(Model_1$coefficients,col="blue",lwd=2)
         abline(h=0,col="black",lwd=2)
         abline(Model_3$coefficients,col="blue",lty=2,lwd=2)

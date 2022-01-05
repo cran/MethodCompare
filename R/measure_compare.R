@@ -1,6 +1,50 @@
+#' Estimation of the amount of bias of a new measurement method relative to a
+#' reference method with possibly heteroscedastic errors
+#'
+#' This function implements the methodology reported in the paper entitled
+#' "Effective plots to assess bias and precision in method comparison studies"
+#' published in Statistical Methods in
+#' Medical Research 2018;27:1650-1660 (P. Taffé).
+#'
+#' @param data a data frame containing the identification number of the subject (id),
+#' the measurement values from the new measurement method (y1) and those
+#' from the reference methods).
+#' @param new specify the variable name or location of the new measurement method
+#' @param Ref specify the variable name or location of the reference standard
+#' @param ID specify the variable name or location of the subject identification
+#' number
+#'
+#' @return
+#' The function return a list with the following items:
+#'
+#' \itemize{
+#'   \item Bias: differential and proportional bias for new method and the
+#'   associated 95 percent confidence intervals
+#'   \item Models: list of models fitted in estimation procedure
+#'   \item Ref: a data frame containing the various variables used to
+#'   compute the bias and precision plots, as well the smooth standard errors
+#'   estimates of the reference standard
+#'   \item New: a data frame containing the various variables used to compute
+#'   the bias and precision plots, as well the smooth standard errors estimates
+#'    of the new measurement method
+#' }
+#' @author  Mingkai Peng
+#' @details
+#' This functions implements the new estimation procedure to assess the
+#' agreement between the two measurement methods, as well as
+#' Bland & Altman's limits of agreement extended to the setting of
+#' possibly heteroscedastic measurement errors.
+#' @export
+#' @importFrom nlme lme varIdent
+#' @examples
+#' ### Load the data
+#' data(data1)
+#' ### Analysis
+#' measure_model <- measure_compare(data1)
 
 measure_compare <- function(data,new="y1",Ref="y2",ID="id"){
-  #### Check whether required package is installed.
+#data_sub <- (data[,c("id","y1","y2")])
+#View(data_sub)
   data_sub <-(data[,c(ID,new,Ref)])
   colnames(data_sub) <- c("id","y1","y2")
   #### Calculate average value for reference method and categorize it into 10
@@ -8,17 +52,18 @@ measure_compare <- function(data,new="y1",Ref="y2",ID="id"){
   Mean_y2 <- aggregate(y2~id,data=data_sub,mean)
   N_cat <- ifelse(dim(Mean_y2)[1]>=100,11,6)
   Mean_y2$cat_y2_mean <- cut(Mean_y2$y2,
-                             breaks=quantile(Mean_y2$y2, probs=seq(0,1,length.out = N_cat)),
-                             include.lowest=TRUE)
+        breaks=quantile(Mean_y2$y2, probs=seq(0,1,length.out = N_cat)),
+          include.lowest=TRUE)
   colnames(Mean_y2)[2] <- "y2_mean"
   data_sub <- merge(data_sub,Mean_y2,by="id")
-  ### create a dataset for reference method by excluding missing values
+  ### create a dataset for reference method by excluding missing value
   data_sub_y2 <- data_sub[ , c("y2")]
   data_sub_nomiss_y2 <- data_sub[complete.cases(data_sub_y2), ]
   ### Model 1: mixed model for BLUP estimate of x
-  model_1 <- lme(y2 ~ 1, data = data_sub_nomiss_y2, random = ~ 1|id,
-                 weights=varIdent(form = ~1|cat_y2_mean), na.action = na.exclude)
-    data_sub_nomiss_y2$y2_hat <- fitted(model_1)
+  #model_1 <- lme(y2 ~ 1, data = data_sub_nomiss_y2, random = ~ 1|id,
+  #     weights=varIdent(form = ~1|cat_y2_mean), na.action = na.exclude) # breaks down when n2 small...
+  model_1 <- lme(y2 ~ 1, data = data_sub_nomiss_y2, random = ~ 1|id, na.action = na.exclude)
+  data_sub_nomiss_y2$y2_hat <- fitted(model_1)
   ### create a dataset with y2_hat
   data_sub_y2_hat <- data_sub_nomiss_y2[ , c("id","y2_hat")]
   data_sub_y2_hat <- aggregate(y2_hat~id,data=data_sub_y2_hat,mean)
@@ -29,7 +74,9 @@ measure_compare <- function(data,new="y1",Ref="y2",ID="id"){
   data_newmethod <- data_sub_nomiss_y1
   ########         Models on the reference method
   #### Model 2: regression of y2 based on BLUP of x
-  model_2 <- lm(y2~y2_hat,data=data_sub, na.action = na.exclude)
+  model_2 <- lm(y2 ~ 0+y2_hat, data = data_sub, na.action = na.exclude) # not useful...
+  #model_2 <- lm(y2 ~ y2_hat, data = data_sub, offset = rep(0, length(y)) # not useful...
+  #model_2$coefficients
   data_sub$fitted_y2 <- data_sub$y2_hat
   data_sub$resid_y2 <- data_sub$y2-data_sub$y2_hat
   data_sub$resid_y2_abs <- abs(data_sub$resid_y2)
