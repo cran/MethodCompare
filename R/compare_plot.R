@@ -19,7 +19,7 @@
 #' compare_plot(measure_model)}
 compare_plot <- function(object) {
   print("Generating Comparison Plot ...")
-  data_sub <- object$sub
+  data_sub <- object$data
   models <- object$models
   
   max <- max(data_sub$y2, data_sub$y1, data_sub$y1_corr, na.rm = TRUE)
@@ -36,11 +36,12 @@ compare_plot <- function(object) {
   title(main = "Comparison of the methods", cex.main = 0.9)
   ### Add the y axis
   axis(2, col = "black", las = 1)
-  mtext("Measurement method", side = 2, line = 2)
+  mtext(sprintf("%s, %s_corr and %s", object$methods[1], object$methods[1], 
+                object$methods[2]), side = 2, line = 2.5, cex = 0.8)
   box(col = "black")
   ### Add the x axis
   axis(1)
-  mtext("BLUP of x", side = 1, col = "black", line = 2)
+  mtext("True latent trait", side = 1, col = "black", line = 2, cex = 0.8)
   points(data_sub$y2_hat, data_sub$y1, pch = 19, col = "blue", cex = 0.5)
   points(data_sub$y2_hat, data_sub$y1_corr, pch = 19, col = "red",
          cex = 0.5)
@@ -50,7 +51,8 @@ compare_plot <- function(object) {
   legend("topleft",
          legend = c(sprintf("Reference method (%s)", object$methods[2]),
                     sprintf("New method (%s)", object$methods[1]),
-                    sprintf("Recalibrated new method (%s_corr)", object$methods[1])),
+                    sprintf("Recalibrated new method (%s_corr)", 
+                            object$methods[1])),
          pch = c(19, 19, 19), lty = c(1, 1, 2), col = c("black", "blue", "red"),
          y.intersp = 0.7, yjust = 0.2, bty = "n", cex = 0.8)
 }

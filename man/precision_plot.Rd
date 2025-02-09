@@ -4,13 +4,19 @@
 \alias{precision_plot}
 \title{Plot the precision of the methods}
 \usage{
-precision_plot(object, object2 = NULL)
+precision_plot(object, object2 = NULL, log = FALSE, rarea = FALSE)
 }
 \arguments{
 \item{object}{list returned by \link{measure_compare} function.}
 
 \item{object2}{(optional) returned by \link{measure_compare} function.
 If provided, will plot a second precision estimate.}
+
+\item{log}{if \code{TRUE}, guarantee the simultaneous confidence bands around the
+standard deviation of measurement errors to be strictly positive.}
+
+\item{rarea}{if \code{TRUE}, draw the plot with shading areas between
+the confidence bands.}
 }
 \description{
 This function draws the "precision plot", which allows the visual comparison

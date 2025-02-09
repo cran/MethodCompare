@@ -3,7 +3,7 @@
 total_bias_simulation <- function(object) {
   # Extract the objects from the output
   bias <- object$bias
-  data_agg <- object$agg
+  data_agg <- aggregate_data(object$data)
   nb_simul <- object$nb_simul
   
   # Retrieve useful params for simulation
@@ -16,7 +16,7 @@ total_bias_simulation <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
+    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
                              sd = data_agg$sd_blup)
     biases_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m1, Sigma = v1)
     
@@ -39,9 +39,9 @@ total_bias_simulation <- function(object) {
   
   fp <- function(...) mfp::fp(...)
   
-  frac_poly_bias_y1_lo <- mfp::mfp(bias_y1_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_bias_y1_lo <- mfp::mfp(bias_y1_lo ~ fp(y2_hat, df = 4),
                                    data = data_agg)
-  frac_poly_bias_y1_up <- mfp::mfp(bias_y1_up ~ fp(fitted_y2, df = 4),
+  frac_poly_bias_y1_up <- mfp::mfp(bias_y1_up ~ fp(y2_hat, df = 4),
                                    data = data_agg)
   
   data_agg$bias_y1_lo_fit <- predict(frac_poly_bias_y1_lo)

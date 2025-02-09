@@ -26,8 +26,9 @@ bias_plot <- function(object) {
   
   # Extract the objects from the output
   bias <- object$bias
-  data_sub <- object$sub
-  data_new <- object$new
+  data_sub <- object$data
+  data_agg <- aggregate_data(data_sub)
+  data_new <- data_agg[!is.na(data_agg$y1), ]
   models <- object$models
   subtitle <- paste("Differential bias:", round(bias[1, 1], 3), "; ",
                     "Proportional bias:", round(bias[2, 1], 3), sep = "")
@@ -58,38 +59,39 @@ bias_plot <- function(object) {
   abline(models[[4]]$coef, lwd = 2, lty = 2, col = "blue")
   
   ### Add the subtitle
-  mtext(subtitle, side = 3, cex = 0.8)
+  mtext(subtitle, side = 3, cex = 0.8, line = .2)
   ### Add the left y axis
   axis(2, col = "black", las = 1)
-  mtext("y1 and y2", side = 2, line = 2)
+  mtext(sprintf("%s and %s", object$methods[1], object$methods[2]), side = 2, 
+        line = 2.5, cex = 0.8)
   box(col = "black")
   
   ### Add second plot: bias axis
   par(new = TRUE)
   ## Plot the bias plot and put axis scale on right
-  plot(data_new$y2_hat, data_new$bias, xlab = "", ylab = "", axes = FALSE,
+  plot(data_new$y2_hat, data_new$bias_y1, xlab = "", ylab = "", axes = FALSE,
        col = "red", type = "l", lty = 1, lwd = 2)
   abline(h = 0, col = "black", lwd = 1)
   ## Add the right y axis and label
-  mtext("Bias", side = 4, col = "red", line = 2.5)
+  mtext("Bias", side = 4, col = "red", line = 2.5, cex = 0.8)
   axis(4, col = "red", col.axis = "red", las = 1)
   ### Draw the x axis and add the label
   axis(1)
-  mtext("BLUP of x", side = 1, col = "black", line = 2)
+  mtext("True latent trait", side = 1, col = "black", line = 2, cex = 0.8)
   ### Add the legend
-  lm_bias <- lm(data_new$bias ~ data_new$y2_hat)
+  lm_bias <- lm(data_new$bias_y1 ~ data_new$y2_hat)
   if (coef(lm_bias)[2] < 0) {
     legend("top",
-           legend = c(sprintf("Reference method (%s)", object$methods[2]),
-                      sprintf("New method (%s)", object$methods[1]),
+           legend = c(sprintf("%s (Reference method)", object$methods[2]),
+                      sprintf("%s (New method)", object$methods[1]),
                       "Bias"),
            pch = c(19, 19), col = c("black", "blue", "red"),
            pt.cex = c(1, 1, 0.0001), y.intersp = 0.7, yjust = 0.2,
            lty = c(1, 2, 1), bty = "n", cex = 0.8)
   } else {
     legend("topleft",
-           legend = c(sprintf("Reference method (%s)", object$methods[2]),
-                      sprintf("New method (%s)", object$methods[1]),
+           legend = c(sprintf("%s (Reference method)", object$methods[2]),
+                      sprintf("%s (New method)", object$methods[1]),
                       "Bias"),
            pch = c(19, 19), col = c("black", "blue", "red"),
            pt.cex = c(1, 1, 0.0001), y.intersp = 0.7, yjust = 0.2,

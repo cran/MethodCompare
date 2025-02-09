@@ -5,7 +5,14 @@
 \title{Estimation of the amount of bias of the new measurement method relative to
 the reference method}
 \usage{
-measure_compare(data, new = "y1", ref = "y2", id = "id", nb_simul = 1000)
+measure_compare(
+  data,
+  new = "y1",
+  ref = "y2",
+  id = "id",
+  nb_simul = 1000,
+  if_value = NULL
+)
 }
 \arguments{
 \item{data}{a required data frame containing the identification number of the
@@ -23,19 +30,16 @@ identification numbers.}
 
 \item{nb_simul}{an optional number. The number of simulations used for simultaneous
 confidence bands.}
+
+\item{if_value}{an optional number. Restrict the study to observed
+measurement greater than the provided value, i.e., \code{y1 >= if_value && y2 >= if_value}.}
 }
 \value{
 The function returns a list with the following items:
 \itemize{
 \item \code{models}: a list of models fitted in estimation procedure
-\item \code{sub}: the original data frame with renamed columns and
+\item \code{data}: the original data frame with renamed columns and
 additional computed data
-\item \code{ref}: a data frame for the reference method and its related estimates
-\item \code{y1_y2}: a subset data frame of sub containing measurements for both
-methods, that is \code{y1} and \code{y2} columns are not NAs
-\item \code{new}: a data frame for the new method and its related estimates
-\item \code{agg}: a data frame made from \code{ref} and \code{new} containing a row per
-individual
 \item \code{sim_params}: estimated model coefficients used afterward
 \item \code{nb_simul}: the number of simulations used for confidence bands
 simulations

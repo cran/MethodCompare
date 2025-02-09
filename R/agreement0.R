@@ -10,9 +10,12 @@
 #' of agreement index.
 #'
 #' @inheritParams compare_plot
+#' @param rarea if `TRUE`, draw the plot with shading areas between
+#' the confidence bands.
 #' 
 #' @importFrom stats qnorm rnorm quantile predict
-#' @importFrom graphics title par points axis mtext box legend
+#' @importFrom graphics title par points axis mtext box legend polygon
+#' @importFrom grDevices rgb
 #' 
 #' @export
 #'
@@ -23,12 +26,12 @@
 #' measure_model <- measure_compare(data1, nb_simul=100)
 #' ### Plot the agreement without recalibration
 #' agreement0(measure_model)}
-agreement0 <- function(object) {
+agreement0 <- function(object, rarea = FALSE) {
   print("Generating Agreement Plot without recalibration ...")
   
   # Extract the objects from the output
-  data_agg <- object$agg
-  data_y1_y2 <- object$y1_y2
+  data_agg <- aggregate_data(object$data)
+  data_y1_y2 <- complete_data(object$data)
   params <- object$sim_params
   bias <- object$bias
   nb_simul <- object$nb_simul
@@ -37,7 +40,7 @@ agreement0 <- function(object) {
   sig_d <- sqrt(sig2_d)
   
   data_agg$pct_agreement <- 1 - (qnorm(0.975) * sig_d + abs(data_agg$bias_y1)) /
-    abs(data_agg$fitted_y2)
+    abs(data_agg$y2_hat)
   
   data_agg$loa_up <- data_agg$bias_y1 + qnorm(0.975) * sig_d
   data_agg$loa_lo <- data_agg$bias_y1 + qnorm(0.025) * sig_d
@@ -71,7 +74,7 @@ agreement0 <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
+    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
                       sd = data_agg$sd_blup)
     
     thetas1_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m1, Sigma = v1)
@@ -133,9 +136,9 @@ agreement0 <- function(object) {
   
   fp <- function(...) mfp::fp(...)
   
-  frac_poly_loa_up_up <- mfp::mfp(loa_up_up ~ fp(fitted_y2, df = 4),
+  frac_poly_loa_up_up <- mfp::mfp(loa_up_up ~ fp(y2_hat, df = 4),
                              data = data_agg)
-  frac_poly_loa_up_lo <- mfp::mfp(loa_up_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_loa_up_lo <- mfp::mfp(loa_up_lo ~ fp(y2_hat, df = 4),
                              data = data_agg)
   
   data_agg$loa_up_up_fit <- predict(frac_poly_loa_up_up)
@@ -144,7 +147,7 @@ agreement0 <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
+    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
                       sd = data_agg$sd_blup)
     
     thetas1_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m1, Sigma = v1)
@@ -204,9 +207,9 @@ agreement0 <- function(object) {
   data_agg$loa_lo_lo <- data_agg$loa_lo - crit_value5 * se_loa_lo
   data_agg$loa_lo_up <- data_agg$loa_lo + crit_value5 * se_loa_lo
   
-  frac_poly_loa_lo_up <- mfp::mfp(loa_lo_up ~ fp(fitted_y2, df = 4),
+  frac_poly_loa_lo_up <- mfp::mfp(loa_lo_up ~ fp(y2_hat, df = 4),
                              data = data_agg)
-  frac_poly_loa_lo_lo <- mfp::mfp(loa_lo_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_loa_lo_lo <- mfp::mfp(loa_lo_lo ~ fp(y2_hat, df = 4),
                              data = data_agg)
   
   data_agg$loa_lo_up_fit <- predict(frac_poly_loa_lo_up)
@@ -236,12 +239,12 @@ agreement0 <- function(object) {
   title(main = "Agreement plot", cex.main = 0.9)
   
   # Bias
-  points(data_agg$y2_hat, data_agg$bias, col = "red",
+  points(data_agg$y2_hat, data_agg$bias_y1, col = "red",
          type = "l", lty = 1)
   
   # Add the subtitle
   subtitle <- "(no recalibration)"
-  mtext(subtitle, side = 3, cex = 0.8)
+  mtext(subtitle, side = 3, cex = 0.8, line = .2)
   
   # 95% LoA
   points(data_agg$y2_hat, data_agg$loa_lo, col = "dimgrey",
@@ -255,15 +258,36 @@ agreement0 <- function(object) {
   points(data_agg$y2_hat, data_agg$loa_lo_lo_fit, col = "orange",
          type = "l", lty = 2)
   
+  if (rarea) {
+    polygon(
+      c(data_agg$y2_hat, rev(data_agg$y2_hat)),
+      c(data_agg$loa_lo_lo_fit,
+        rev(data_agg$loa_lo_up_fit)),
+      col = rgb(1, 0.5, 0, alpha = 0.2),
+      border = NA
+    )
+  }
+  
   # Upper confidence bands
   points(data_agg$y2_hat, data_agg$loa_up_up_fit, col = "orange",
          type = "l", lty = 2)
   points(data_agg$y2_hat, data_agg$loa_up_lo_fit, col = "orange",
          type = "l", lty = 2)
   
+  if (rarea) {
+    polygon(
+      c(data_agg$y2_hat, rev(data_agg$y2_hat)),
+      c(data_agg$loa_up_lo_fit,
+        rev(data_agg$loa_up_up_fit)),
+      col = rgb(1, 0.5, 0, alpha = 0.2),
+      border = NA
+    )
+  }
+  
   # Left y-axis
   axis(2, col = "black", las = 1)
-  mtext("Difference (y1 - y2)", side = 2, line = 2)
+  mtext(sprintf("Difference (%s - %s)", object$methods[1], object$methods[2]), 
+        side = 2, line = 2.5, cex = 0.8)
   box(col = "black")
   
   # Add second plot: percentage agreement
@@ -272,17 +296,17 @@ agreement0 <- function(object) {
        axes = FALSE, col = "blue", type = "l", lwd = 1, ylim = c(0, 1))
   
   # Right y-axis
-  mtext("% of agreement", side = 4, col = "blue", line = 2.5)
+  mtext("% of agreement", side = 4, col = "blue", line = 2.5, cex = 0.8)
   axis(4, col = "blue", col.axis = "blue", las = 1)
   
   # x-axis
   axis(1)
-  mtext("BLUP of x", side = 1, col = "black", line = 2)
+  mtext("True latent trait", side = 1, col = "black", line = 2, cex = 0.8)
   
   # Legend
   legend("top", legend = c("Bias", "95% LoA", "95% confidence limits",
                            "% of agreement"),
-         pch = c(1, 19), col = c("red", "dimgrey", "red", "blue"),
+         pch = c(1, 19), col = c("red", "dimgrey", "orange", "blue"),
          pt.cex = c(0, 0), y.intersp = 0.7, yjust = 0.2, lty = c(1, 2, 2, 1),
          bty = "n", cex = 0.8)
 }

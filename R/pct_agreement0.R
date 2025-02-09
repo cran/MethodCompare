@@ -24,8 +24,8 @@ pct_agreement0 <- function(object) {
   print("Generating Percentage Agreement Plot without recalibration ...")
   
   # Extract the objects from the output
-  data_old <- object$ref
-  data_agg <- object$agg
+  data_old <- object$data
+  data_agg <- aggregate_data(object$data)
   params <- object$sim_params
   nb_simul <- object$nb_simul
   
@@ -35,7 +35,7 @@ pct_agreement0 <- function(object) {
   sig_d <- sqrt(sig2_d)
   
   data_agg$pct_agreement <- 1 - (qnorm(0.975) * sig_d + abs(data_agg$bias_y1)) /
-    abs(data_agg$fitted_y2)
+    abs(data_agg$y2_hat)
   
   # Simulation parameters
   m1 <- matrix(params$model_5_coef, nrow = 1)
@@ -50,30 +50,30 @@ pct_agreement0 <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in nb_ind) {
-    m_blup_x_j <- min(data_old[data_old$id == j, ]$fitted_y2)
-    v_blup_x_j <- min(data_old[data_old$id == j, ]$v_blup)
+    m_blup_x_j <- min(data_old[data_old$id == j, ]$y2_hat, na.rm = TRUE)
+    v_blup_x_j <- min(data_old[data_old$id == j, ]$v_blup, na.rm = TRUE)
     sd_blup_x_j <- sqrt(v_blup_x_j)
     
-    blup_x_j <- rnorm(10000, mean = m_blup_x_j,
-                      sd = sd_blup_x_j)
+    blup_x_j <- abs(rnorm(1000, mean = m_blup_x_j, sd = sd_blup_x_j))
     
-    thetas1_j <- rockchalk::mvrnorm(10000, mu = m1, Sigma = v1)
-    thetas2_j <- rockchalk::mvrnorm(10000, mu = m2, Sigma = v2)
-    biases_j <- rockchalk::mvrnorm(10000, mu = m3, Sigma = v3)
+    thetas1_j <- rockchalk::mvrnorm(1000, mu = m1, Sigma = v1)
+    thetas2_j <- rockchalk::mvrnorm(1000, mu = m2, Sigma = v2)
+    biases_j <- rockchalk::mvrnorm(1000, mu = m3, Sigma = v3)
     
     sig_d_j <- sqrt((pi / 2) * (thetas1_j[, 1] + thetas1_j[, 2] * blup_x_j)^2 +
                       (pi / 2) * (thetas2_j[, 1] + thetas2_j[, 2] * blup_x_j)^2)
     bias_j <- biases_j[, 1] + blup_x_j * (biases_j[, 2] - 1)
     
     pct_agreement_j <- 1 - (qnorm(0.975) * sig_d_j + abs(bias_j)) /
-      abs(blup_x_j)
+      blup_x_j
+    pct_agreement_j <- pmax(pct_agreement_j, 0)
     
     data_agg$v_pct_agreement[data_agg$id == j] <- var(pct_agreement_j)
   }
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
-                      sd = data_agg$sd_blup)
+    blup_x_j <- abs(rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
+                      sd = data_agg$sd_blup))
     
     thetas1_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m1, Sigma = v1)
     
@@ -88,19 +88,19 @@ pct_agreement0 <- function(object) {
     sig_d_j <- sqrt(sig2_res_y1_j + sig2_res_y2_j)
     
     biases_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m3, Sigma = v3)
-    
     bias_j <- biases_j[, 1] + blup_x_j * (biases_j[, 2] - 1)
     
     pct_agreement_j <- 1 - (qnorm(0.975) * sig_d_j + abs(bias_j)) /
-      abs(blup_x_j)
+      blup_x_j
     
+    pct_agreement_j <- pmax(pct_agreement_j, 0)
     d_j <- abs(pct_agreement_j - data_agg$pct_agreement) /
       sqrt(data_agg$v_pct_agreement)
     max_d_j <- max(d_j)
     
     sim_max_d[[j]] <- max_d_j
   }
-  
+
   crit_value6 <- quantile(unlist(sim_max_d), c(0.95))
   
   data_agg$pct_agreement_lo <- data_agg$pct_agreement - crit_value6 *
@@ -110,13 +110,19 @@ pct_agreement0 <- function(object) {
   
   fp <- function(...) mfp::fp(...)
   
-  frac_poly_pct_agreement_lo <- mfp::mfp(pct_agreement_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_pct_agreement_lo <- mfp::mfp(pct_agreement_lo ~ fp(y2_hat, df = 4),
                                     data = data_agg)
-  frac_poly_pct_agreement_up <- mfp::mfp(pct_agreement_up ~ fp(fitted_y2, df = 4),
+  frac_poly_pct_agreement_up <- mfp::mfp(pct_agreement_up ~ fp(y2_hat, df = 4),
                                     data = data_agg)
   
   data_agg$pct_agreement_lo_fit <- predict(frac_poly_pct_agreement_lo)
   data_agg$pct_agreement_up_fit <- predict(frac_poly_pct_agreement_up)
+  
+  #low_fit <- lm(pct_agreement_lo ~ poly(y2_hat, 2, raw = TRUE), data = data_agg)
+  #up_fit <- lm(pct_agreement_up ~ poly(y2_hat, 2, raw = TRUE), data = data_agg)
+  
+  #data_agg$pct_agreement_lo_fit <- predict(low_fit)
+  #data_agg$pct_agreement_up_fit <- predict(up_fit)
   
   # Compute min and max values for y-axis
   min_y <- min(data_agg$pct_agreement_lo_fit, data_agg$pct_agreement_up_fit,
@@ -133,13 +139,13 @@ pct_agreement0 <- function(object) {
   par(mar = c(3.5, 3.5, 3, 4) + 0.1)
   # Plot the percentage agreement with no recalibration
   plot(data_agg$y2_hat, data_agg$pct_agreement, xlab = "", ylab = "",
-       axes = FALSE, col = "blue", ylim = c(max(min_y, 0), min(max_y, 1)),
+       axes = FALSE, col = "blue", ylim = c(min_y, max_y),
        type = "l")
   title(main = "Percentage agreement plot", cex.main = 0.9)
   
   # Add the subtitle
   subtitle <- "(no recalibration)"
-  mtext(subtitle, side = 3, cex = 0.8)
+  mtext(subtitle, side = 3, cex = 0.8, line = .2)
   
   # 95% confidence bands
   points(data_agg$y2_hat, data_agg$pct_agreement_lo_fit, col = "blue",
@@ -149,12 +155,12 @@ pct_agreement0 <- function(object) {
   
   # y-axis
   axis(2, col = "black", las = 1)
-  mtext("Percentage agreement", side = 2, line = 2)
+  mtext("Percentage agreement", side = 2, line = 2.75, cex = 0.8)
   box(col = "black")
   
   # x-axis
   axis(1)
-  mtext("BLUP of x", side = 1, col = "black", line = 2)
+  mtext("True latent trait", side = 1, col = "black", line = 2, cex = 0.8)
   
   # Legend
   legend("top", legend = c("% agreement", "95% CB"),

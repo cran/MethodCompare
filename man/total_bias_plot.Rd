@@ -4,13 +4,16 @@
 \alias{total_bias_plot}
 \title{Plot total bias}
 \usage{
-total_bias_plot(object, object2 = NULL)
+total_bias_plot(object, object2 = NULL, rarea = FALSE)
 }
 \arguments{
 \item{object}{list returned by \link{measure_compare} function.}
 
 \item{object2}{(optional) returned by \link{measure_compare} function.
 If provided, will plot a second total bias estimate.}
+
+\item{rarea}{if \code{TRUE}, draw the plot with shading areas between
+the confidence bands.}
 }
 \description{
 This function draws the "total bias plot", which is used to visually assess

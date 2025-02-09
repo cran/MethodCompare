@@ -4,10 +4,13 @@
 \alias{agreement0}
 \title{Plot the agreement before recalibration}
 \usage{
-agreement0(object)
+agreement0(object, rarea = FALSE)
 }
 \arguments{
 \item{object}{list returned by \link{measure_compare} function.}
+
+\item{rarea}{if \code{TRUE}, draw the plot with shading areas between
+the confidence bands.}
 }
 \description{
 This function draws the "agreement plot" before recalibration, which is used

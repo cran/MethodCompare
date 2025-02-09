@@ -7,9 +7,12 @@
 #' simultaneous confidence bands.
 #'
 #' @inheritParams compare_plot
+#' @param rarea if `TRUE`, draw the plot with shading areas between
+#' the confidence bands.
 #' 
 #' @importFrom stats rnorm quantile
-#' @importFrom graphics title par points axis mtext box legend
+#' @importFrom graphics title par points axis mtext box legend polygon
+#' @importFrom grDevices rgb
 #' 
 #' @export
 #'
@@ -20,11 +23,11 @@
 #' measure_model <- measure_compare(data1, nb_simul=100)
 #' ### Plot the square root mean squared errors
 #' sqrt_mse(measure_model)}
-sqrt_mse <- function(object) {
+sqrt_mse <- function(object, rarea = FALSE) {
   print("Generating sqrtMSE Plot ...")
   
   # Extract the objects from the output
-  data_agg <- object$agg
+  data_agg <- aggregate_data(object$data)
   params <- object$sim_params
   nb_simul <- object$nb_simul
   if (nb_simul < 1000) nb_simul <- 1000
@@ -54,7 +57,7 @@ sqrt_mse <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
+    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
                       sd = data_agg$sd_blup)
     
     thetas1_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m1, Sigma = v1)
@@ -100,9 +103,9 @@ sqrt_mse <- function(object) {
   
   fp <- function(...) mfp::fp(...)
   
-  frac_poly_sqrt_mse1_lo <- mfp::mfp(sqrt_mse1_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_sqrt_mse1_lo <- mfp::mfp(sqrt_mse1_lo ~ fp(y2_hat, df = 4),
                                 data = data_agg)
-  frac_poly_sqrt_mse1_up <- mfp::mfp(sqrt_mse1_up ~ fp(fitted_y2, df = 4),
+  frac_poly_sqrt_mse1_up <- mfp::mfp(sqrt_mse1_up ~ fp(y2_hat, df = 4),
                                 data = data_agg)
   
   data_agg$sqrt_mse1_lo_fit <- predict(frac_poly_sqrt_mse1_lo)
@@ -119,7 +122,7 @@ sqrt_mse <- function(object) {
   sim_max_d <- vector(mode = "list", length = nb_simul)
   
   for (j in 1:nb_simul) {
-    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$fitted_y2,
+    blup_x_j <- rnorm(dim(data_agg)[1], mean = data_agg$y2_hat,
                       sd = data_agg$sd_blup)
     
     thetas2_j <- rockchalk::mvrnorm(dim(data_agg)[1], mu = m2, Sigma = v2)
@@ -154,9 +157,9 @@ sqrt_mse <- function(object) {
   data_agg$sqrt_mse2_up <- data_agg$sqrt_mse2 +
     crit_value13 * se_sqrt_mse2
   
-  frac_poly_sqrt_mse2_lo <- mfp::mfp(sqrt_mse2_lo ~ fp(fitted_y2, df = 4),
+  frac_poly_sqrt_mse2_lo <- mfp::mfp(sqrt_mse2_lo ~ fp(y2_hat, df = 4),
                                 data = data_agg)
-  frac_poly_sqrt_mse2_up <- mfp::mfp(sqrt_mse2_up ~ fp(fitted_y2, df = 4),
+  frac_poly_sqrt_mse2_up <- mfp::mfp(sqrt_mse2_up ~ fp(y2_hat, df = 4),
                                 data = data_agg)
   
   data_agg$sqrt_mse2_lo_fit <- predict(frac_poly_sqrt_mse2_lo)
@@ -189,6 +192,16 @@ sqrt_mse <- function(object) {
   points(data_agg$y2_hat, data_agg$sqrt_mse1_up_fit, col = "red",
          type = "l", lty = 2)
   
+  if (rarea) {
+    polygon(
+      c(data_agg$y2_hat, rev(data_agg$y2_hat)),
+      c(data_agg$sqrt_mse1_lo_fit,
+        rev(data_agg$sqrt_mse1_up_fit)),
+      col = rgb(1, 0, 0, alpha = 0.2),
+      border = NA
+    )
+  }
+  
   # MSE2
   points(data_agg$y2_hat, data_agg$sqrt_mse2, col = "black",
          type = "l", lwd = 2)
@@ -199,18 +212,28 @@ sqrt_mse <- function(object) {
   points(data_agg$y2_hat, data_agg$sqrt_mse2_up_fit, col = "black",
          type = "l", lty = 2)
   
+  if (rarea) {
+    polygon(
+      c(data_agg$y2_hat, rev(data_agg$y2_hat)),
+      c(data_agg$sqrt_mse2_lo_fit,
+        rev(data_agg$sqrt_mse2_up_fit)),
+      col = rgb(0, 0, 0, alpha = 0.2),
+      border = NA
+    )
+  }
+  
   # y-axis
   axis(2, col = "black", las = 1)
-  mtext("sqrt(MSE)", side = 2, line = 2)
+  mtext("sqrt(MSE)", side = 2, line = 2.5, cex = 0.8)
   box(col = "black")
   
   # x-axis
   axis(1)
-  mtext("BLUP of x", side = 1, col = "black", line = 2)
+  mtext("True latent trait", side = 1, col = "black", line = 2, cex = 0.8)
   
   # Legend
-  legend("top", legend = c(sprintf("Reference method (%s)", object$methods[2]),
-                           sprintf("New method (%s)", object$methods[1])),
+  legend("top", legend = c(sprintf("%s (Reference method)", object$methods[2]),
+                           sprintf("%s (New method)", object$methods[1])),
          pch = c(1, 19), col = c("black", "red"), pt.cex = c(0, 0),
          y.intersp = 0.7, yjust = 0.2, lty = c(1, 1), bty = "n", cex = 0.8)
   
